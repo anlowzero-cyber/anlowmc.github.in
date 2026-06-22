@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnlowMc · Dev Minecraft</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@iconify/iconify@latest/dist/iconify.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #4ade80;
+    --blue: #38bdf8;
+    --red: #f87171;
+    --yellow: #facc15;
+    --violet: #7c3aed;
+    --bg: #0a0a0a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); font-family: 'Inter', sans-serif; color: #e2e8f0; overflow-x: hidden; }
+  .pixel-font { font-family: 'Press Start 2P', cursive; }
+  .pixel-border { border: 3px solid; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.4), 0 0 0 2px rgba(0,0,0,0.4); image-rendering: pixelated; }
+  .pixel-border-green { border-color: var(--green); }
+  .pixel-border-blue { border-color: var(--blue); }
+  .pixel-border-violet { border-color: var(--violet); }
+
+  /* Grid background */
+  .minecraft-grid {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Particles */
+  .particles-container { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .particle { position: absolute; animation: floatUp linear infinite; opacity: 0.15; }
+  @keyframes floatUp {
+    0% { transform: translateY(100vh) rotate(0deg) scale(0); opacity: 0; }
+    10% { opacity: 0.2; }
+    90% { opacity: 0.15; }
+    100% { transform: translateY(-10vh) rotate(360deg) scale(1); opacity: 0; }
+  }
+
+  /* Glow enchantment */
+  .enchant-glow {
+    animation: enchantPulse 2s ease-in-out infinite;
+    text-shadow: 0 0 10px var(--glow-color, var(--green)), 0 0 20px var(--glow-color, var(--green)), 0 0 40px var(--glow-color, var(--green));
+  }
+  @keyframes enchantPulse {
+    0%, 100% { text-shadow: 0 0 5px var(--glow-color, var(--green)), 0 0 10px var(--glow-color, var(--green)); }
+    50% { text-shadow: 0 0 15px var(--glow-color, var(--green)), 0 0 30px var(--glow-color, var(--green)), 0 0 50px var(--glow-color, var(--green)); }
+  }
+
+  /* XP Bar */
+  .xp-bar { height: 22px; background: #1a1a2e; border: 2px solid #333; border-radius: 2px; overflow: hidden; position: relative; }
+  .xp-fill { height: 100%; border-radius: 1px; position: relative; transition: width 1.5s ease-out; }
+  .xp-fill::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: xpShine 2s ease-in-out infinite;
+  }
+  @keyframes xpShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* Nav blur */
+  .navbar-blur { backdrop-filter: blur(12px); background: rgba(10,10,10,0.85); border-bottom: 2px solid rgba(74,222,128,0.15); }
+
+  /* Cards */
+  .minecard {
+    background: #111; border: 3px solid #222;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+  }
+  .minecard:hover { transform: translateY(-6px); border-color: var(--green); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.5), 0 8px 32px rgba(74,222,128,0.15); }
+
+  /* Decorative parallax blocks */
+  .deco-block {
+    position: absolute; opacity: 0.06; transition: transform 0.1s ease-out;
+    font-family: 'Press Start 2P', cursive; font-size: 48px; pointer-events: none;
+  }
+
+  /* Reveal */
+  .reveal { opacity: 0; transform: translateY(40px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* Toast */
+  #toast { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+  /* Stat counter */
+  .stat-digit { display: inline-block; }
+
+  /* Button pixel hover */
+  .btn-pixel { position: relative; transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 0.7rem; }
+  .btn-pixel:hover { transform: translate(-2px, -2px); }
+  .btn-pixel:active { transform: translate(0, 0); }
+
+  /* Animated counter */
+  @keyframes countIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .stat-value { animation: countIn 0.5s ease-out both; }
+
+  /* Section heading underline */
+  .heading-underline {
+    position: relative; display: inline-block;
+  }
+  .heading-underline::after {
+    content: ''; position: absolute; bottom: -8px; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+
+  /* Service icons glow */
+  .service-icon { transition: all 0.3s; }
+  .minecard:hover .service-icon { filter: drop-shadow(0 0 8px var(--green)); }
+
+  /* Tech stack tags */
+  .tech-tag {
+    background: #161616; border: 2px solid #222;
+    transition: all 0.3s; font-family: 'Press Start 2P', cursive; font-size: 0.55rem;
+  }
+  .tech-tag:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(74,222,128,0.2); }
+</style>
+</head>
+<body>
+
+<!-- Grid Background -->
+<div class="minecraft-grid"></div>
+
+<!-- Particles -->
+<div class="particles-container" id="particles"></div>
+
+<!-- Decorative parallax blocks -->
+<div class="deco-block" id="deco1" style="top:15%;left:5%;">■</div>
+<div class="deco-block" id="deco2" style="top:40%;right:5%;">◆</div>
+<div class="deco-block" id="deco3" style="top:65%;left:8%;">●</div>
+<div class="deco-block" id="deco4" style="top:80%;right:8%;">▲</div>
+<div class="deco-block" id="deco5" style="top:25%;right:12%;">■</div>
+
+<!-- Navbar -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style="background: transparent;">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <span class="pixel-font text-sm" style="color: var(--green); text-shadow: 0 0 8px var(--green);">AnlowMc</span>
+    <div class="hidden md:flex gap-6">
+      <a href="#servicios" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Servicios</a>
+      <a href="#proyectos" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Proyectos</a>
+      <a href="#skills" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Skills</a>
+      <a href="#tech" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Tech</a>
+      <a href="#sobre-mi" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Sobre Mí</a>
+      <a href="#contacto" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Contacto</a>
+    </div>
+    <div class="md:hidden">
+      <button id="menuBtn" class="pixel-font text-xs text-green-400">☰</button>
+    </div>
+  </div>
+  <!-- Mobile menu -->
+  <div id="mobileMenu" class="hidden md:hidden px-4 pb-4 space-y-3">
+    <a href="#servicios" class="block pixel-font text-xs text-gray-400">Servicios</a>
+    <a href="#proyectos" class="block pixel-font text-xs text-gray-400">Proyectos</a>
+    <a href="#skills" class="block pixel-font text-xs text-gray-400">Skills</a>
+    <a href="#tech" class="block pixel-font text-xs text-gray-400">Tech</a>
+    <a href="#sobre-mi" class="block pixel-font text-xs text-gray-400">Sobre Mí</a>
+    <a href="#contacto" class="block pixel-font text-xs text-gray-400">Contacto</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section id="hero" class="relative min-h-screen flex items-center justify-center px-4 pt-20" style="z-index: 2;">
+  <div class="text-center max-w-3xl reveal">
+    <p class="pixel-font text-xs mb-4" style="color: var(--yellow); text-shadow: 0 0 8px var(--yellow);">
+      <span class="inline-block enchant-glow" style="--glow-color: var(--yellow);">⚡ Dev de Servidores Minecraft</span>
+    </p>
+    <h1 class="pixel-font text-3xl md:text-5xl mb-3 enchant-glow" style="--glow-color: var(--green);">
+      AnlowMc
+    </h1>
+    <p class="text-gray-400 text-lg md:text-xl mb-8 max-w-xl mx-auto leading-relaxed">
+      Desarrollo, configuración y optimización de servidores Minecraft.<br>
+      Especialista en <span style="color: var(--yellow);">JavaScript</span> y <span style="color: var(--blue);">HTML</span>.
+    </p>
+    <div class="flex flex-wrap justify-center gap-4 mb-12">
+      <a href="#contacto" class="btn-pixel pixel-border pixel-border-green px-6 py-3 text-black rounded" style="background: var(--green);">
+        Contratame
+      </a>
+      <a href="#proyectos" class="btn-pixel pixel-border px-6 py-3 rounded" style="border-color: var(--blue); color: var(--blue);">
+        Proyectos
+      </a>
+    </div>
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+      <div class="minecard rounded p-4 reveal" style="animation-delay: 0.2s;">
+        <div class="stat-value pixel-font text-xl md:text-2xl" style="color: var(--green);" data-target="57">0+</div>
+        <p class="text-xs text-gray-500 mt-1">Servers</p>
+      </div>
+      <div class="minecard rounded p-4 reveal" style="animation-delay: 0.4s;">
+        <div class="stat-value pixel-font text-xl md:text-2xl" style="color: var(--blue);" data-target="100">0+</div>
+        <p class="text-xs text-gray-500 mt-1">Configs</p>
+      </div>
+      <div class="minecard rounded p-4 reveal" style="animation-delay: 0.6s;">
+        <div class="stat-value pixel-font text-xl md:text-2xl" style="color: var(--violet);" data-target="40">0+</div>
+        <p class="text-xs text-gray-500 mt-1">Webs</p>
+      </div>
+      <div class="minecard rounded p-4 reveal" style="animation-delay: 0.8s;">
+        <div class="stat-value pixel-font text-xl md:text-2xl" style="color: var(--yellow);" data-target="60">0+</div>
+        <p class="text-xs text-gray-500 mt-1">Clientes</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Servicios -->
+<section id="servicios" class="relative py-20 px-4" style="z-index: 2;">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--green); color: var(--green);">
+      Servicios
+    </h2>
+    <p class="text-gray-500 text-center mb-12 text-sm">Lo que puedo hacer por tu servidor</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="minecard rounded p-6 reveal">
+        <div class="service-icon text-3xl mb-3">🛠️</div>
+        <h3 class="pixel-font text-sm mb-2" style="color: var(--green);">Creación de Servidores</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Desde cero hasta producción. Monto tu servidor Minecraft completo con todos los plugins, modos de juego y configuraciones necesarias. Paper, Purpur, Folia — lo que mejor se adapte a tu proyecto.</p>
+      </div>
+      <div class="minecard rounded p-6 reveal">
+        <div class="service-icon text-3xl mb-3">⚙️</div>
+        <h3 class="pixel-font text-sm mb-2" style="color: var(--blue);">Configuraciones</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Más de 100 configuraciones realizadas. Plugins, permisos, ranks, economía, protección, crates, drops — cada detalle afinado para que todo funcione en armonía.</p>
+      </div>
+      <div class="minecard rounded p-6 reveal">
+        <div class="service-icon text-3xl mb-3">🌐</div>
+        <h3 class="pixel-font text-sm mb-2" style="color: var(--violet);">Desarrollo Web</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Tiendas, dashboards, páginas de votación, foros, landings. Desarrollo frontend limpio y funcional con HTML, CSS y JavaScript vanilla. Más de 40 webs entregadas.</p>
+      </div>
+      <div class="minecard rounded p-6 reveal">
+        <div class="service-icon text-3xl mb-3">🚀</div>
+        <h3 class="pixel-font text-sm mb-2" style="color: var(--yellow);">Optimización</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">TPS estables, lag reducido, timings limpios. Análisis de rendimiento y ajuste de configs para que tu servidor vuele incluso con muchos jugadores.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Proyectos -->
+<section id="proyectos" class="relative py-20 px-4" style="z-index: 2; background: rgba(255,255,255,0.01);">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--yellow); color: var(--yellow);">
+      Proyectos
+    </h2>
+    <p class="text-gray-500 text-center mb-12 text-sm">Comunidades y trabajos destacados</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- AxoStudio -->
+      <div class="minecard rounded p-6 reveal lg:col-span-2" style="border-color: rgba(124,58,237,0.3);">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">🦎</span>
+          <div>
+            <h3 class="pixel-font text-sm" style="color: var(--violet);">AxoStudio</h3>
+            <p class="text-xs text-gray-500">Proyecto Principal</p>
+          </div>
+        </div>
+        <p class="text-gray-400 text-sm mb-4">Estudio de desarrollo Minecraft donde creo servidores completos, configuraciones profesionales y recursos para la comunidad hispana. Mi proyecto bandera donde aplico todo lo que sé.</p>
+        <a href="https://discord.gg/E4wF3Vrfe7" target="_blank" rel="noopener" class="btn-pixel inline-flex items-center gap-2 px-4 py-2 rounded text-xs" style="border: 2px solid var(--violet); color: var(--violet);">
+          <span class="iconify" data-icon="ic:baseline-discord"></span> Discord AxoStudio
+        </a>
+      </div>
+      <!-- Orbit Network -->
+      <div class="minecard rounded p-6 reveal" style="border-color: rgba(56,189,248,0.3);">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">🌌</span>
+          <div>
+            <h3 class="pixel-font text-sm" style="color: var(--blue);">Orbit Network</h3>
+            <p class="text-xs text-gray-500">Network</p>
+          </div>
+        </div>
+        <p class="text-gray-400 text-sm mb-4">Red de servidores Minecraft con múltiples modalidades y comunidad activa.</p>
+        <a href="https://discord.gg/7qZG2hFh3" target="_blank" rel="noopener" class="btn-pixel inline-flex items-center gap-2 px-4 py-2 rounded text-xs" style="border: 2px solid var(--blue); color: var(--blue);">
+          <span class="iconify" data-icon="ic:baseline-discord"></span> Discord Orbit
+        </a>
+      </div>
+      <!-- Tiendas & Dashboards -->
+      <div class="minecard rounded p-6 reveal">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">🛒</span>
+          <h3 class="pixel-font text-xs" style="color: var(--green);">Tiendas & Dashboards</h3>
+        </div>
+        <p class="text-gray-400 text-sm">Webs de tienda con Tebex/CraftingStore y paneles de control personalizados. Administración fácil para tu staff.</p>
+      </div>
+      <!-- Setup Completo -->
+      <div class="minecard rounded p-6 reveal">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">📦</span>
+          <h3 class="pixel-font text-xs" style="color: var(--blue);">Setup Completo</h3>
+        </div>
+        <p class="text-gray-400 text-sm">Paquete integral: plugins, configs, permisos, economía, protección y más. Todo listo para abrir tu servidor.</p>
+      </div>
+      <!-- Performance Boost -->
+      <div class="minecard rounded p-6 reveal">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">⚡</span>
+          <h3 class="pixel-font text-xs" style="color: var(--yellow);">Performance Boost</h3>
+        </div>
+        <p class="text-gray-400 text-sm">Optimización de rendimiento — ajuste de bukkit/spigot/paper/purpur.yml, timings, chunks y entidades para máximo TPS.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Skills -->
+<section id="skills" class="relative py-20 px-4" style="z-index: 2;">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--blue); color: var(--blue);">
+      Skills
+    </h2>
+    <p class="text-gray-500 text-center mb-12 text-sm">Barras de experiencia Minecraft style</p>
+    <div class="space-y-5 reveal">
+      <!-- JavaScript -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--yellow);">JavaScript</span>
+          <span class="pixel-font text-xs" style="color: var(--yellow);">57</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #facc15, #eab308);" data-width="57"></div></div>
+      </div>
+      <!-- HTML/CSS -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--blue);">HTML/CSS</span>
+          <span class="pixel-font text-xs" style="color: var(--blue);">60</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #38bdf8, #0ea5e9);" data-width="60"></div></div>
+      </div>
+      <!-- Config Servers -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--green);">Config Servers</span>
+          <span class="pixel-font text-xs" style="color: var(--green);">100</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #4ade80, #22c55e);" data-width="100"></div></div>
+      </div>
+      <!-- Paper/Purpur -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--violet);">Paper/Purpur</span>
+          <span class="pixel-font text-xs" style="color: var(--violet);">80</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #7c3aed, #6d28d9);" data-width="80"></div></div>
+      </div>
+      <!-- YAML -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--red);">YAML</span>
+          <span class="pixel-font text-xs" style="color: var(--red);">80</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #f87171, #ef4444);" data-width="80"></div></div>
+      </div>
+      <!-- Proxy -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--yellow);">Proxy</span>
+          <span class="pixel-font text-xs" style="color: var(--yellow);">40</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #facc15, #eab308);" data-width="40"></div></div>
+      </div>
+      <!-- Optimización -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--blue);">Optimización</span>
+          <span class="pixel-font text-xs" style="color: var(--blue);">57</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #38bdf8, #0ea5e9);" data-width="57"></div></div>
+      </div>
+      <!-- Linux -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="pixel-font text-xs" style="color: var(--green);">Linux</span>
+          <span class="pixel-font text-xs" style="color: var(--green);">40</span>
+        </div>
+        <div class="xp-bar"><div class="xp-fill" style="width:0%; background: linear-gradient(90deg, #4ade80, #22c55e);" data-width="40"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section id="tech" class="relative py-20 px-4" style="z-index: 2; background: rgba(255,255,255,0.01);">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--violet); color: var(--violet);">
+      Tech Stack
+    </h2>
+    <p class="text-gray-500 text-center mb-12 text-sm">Tecnologías que uso a diario</p>
+    <div class="flex flex-wrap justify-center gap-3 reveal">
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-js-official" style="color: var(--yellow);"></span>
+        <span style="color: var(--yellow);">JavaScript</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-html" style="color: #e44d26;"></span>
+        <span style="color: #e44d26;">HTML5</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-css" style="color: var(--blue);"></span>
+        <span style="color: var(--blue);">CSS3</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="flat-color-icons:linux" style="color: var(--yellow);"></span>
+        <span style="color: var(--yellow);">Linux</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-docker" style="color: var(--blue);"></span>
+        <span style="color: var(--blue);">Docker</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-mysql" style="color: #00758f;"></span>
+        <span style="color: #00758f;">MySQL</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="mdi:git" style="color: #f05032;"></span>
+        <span style="color: #f05032;">Git</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-nginx" style="color: var(--green);"></span>
+        <span style="color: var(--green);">Nginx</span>
+      </div>
+      <div class="tech-tag rounded px-4 py-3 flex items-center gap-2">
+        <span class="iconify text-lg" data-icon="vscode-icons:file-type-yaml" style="color: var(--red);"></span>
+        <span style="color: var(--red);">YAML</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sobre Mí -->
+<section id="sobre-mi" class="relative py-20 px-4" style="z-index: 2;">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--green); color: var(--green);">
+      Sobre Mí
+    </h2>
+    <div class="minecard rounded p-8 reveal">
+      <p class="text-gray-300 leading-relaxed mb-4">
+        Soy <span style="color: var(--green); font-weight: 600;">AnlowMc</span>, desarrollador de servidores Minecraft con experiencia en <span style="color: var(--yellow);">JavaScript</span> y <span style="color: var(--blue);">HTML</span>. Me apasiona crear experiencias de juego pulidas, desde la configuración más mínima de un plugin hasta el diseño completo del frontend web de tu servidor.
+      </p>
+      <p class="text-gray-300 leading-relaxed mb-4">
+        Fundador de <span style="color: var(--violet); font-weight: 600;">AxoStudio</span>, mi proyecto principal donde canalizo todo mi conocimiento en desarrollo de servidores. Cada proyecto es una oportunidad de llevar las cosas al siguiente nivel.
+      </p>
+      <p class="text-gray-300 leading-relaxed">
+        También formo parte de <span style="color: var(--blue); font-weight: 600;">Orbit Network</span>, una network en crecimiento donde aplico y refino mis habilidades de configuración y optimización a escala. Si buscas a alguien que entienda tanto el backend del servidor como el frontend que ven tus jugadores, estás en el lugar correcto.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Contacto -->
+<section id="contacto" class="relative py-20 px-4" style="z-index: 2; background: rgba(255,255,255,0.01);">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="pixel-font text-xl md:text-2xl text-center mb-4 enchant-glow heading-underline" style="--glow-color: var(--red); color: var(--red);">
+      Contacto
+    </h2>
+    <p class="text-gray-500 text-center mb-12 text-sm">Hablemos de tu proyecto</p>
+
+    <!-- Contact info pills -->
+    <div class="flex flex-wrap justify-center gap-4 mb-10 reveal">
+      <a href="mailto:anlowzero@gmail.com" class="btn-pixel inline-flex items-center gap-2 px-5 py-3 rounded" style="border: 2px solid var(--red); color: var(--red);">
+        <span class="iconify" data-icon="mdi:email"></span> anlowzero@gmail.com
+      </a>
+      <a href="https://discord.gg/E4wF3Vrfe7" target="_blank" rel="noopener" class="btn-pixel inline-flex items-center gap-2 px-5 py-3 rounded" style="border: 2px solid var(--violet); color: var(--violet);">
+        <span class="iconify" data-icon="ic:baseline-discord"></span> AxoStudio
+      </a>
+      <a href="https://discord.gg/7qZG2hFh3" target="_blank" rel="noopener" class="btn-pixel inline-flex items-center gap-2 px-5 py-3 rounded" style="border: 2px solid var(--blue); color: var(--blue);">
+        <span class="iconify" data-icon="ic:baseline-discord"></span> Orbit Network
+      </a>
+    </div>
+    <p class="text-center text-gray-500 text-sm mb-8 reveal">
+      ⏱️ Tiempo de respuesta: ~24 horas
+    </p>
+
+    <!-- Contact form -->
+    <div class="minecard rounded p-6 reveal">
+      <form id="contactForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="pixel-font text-xs text-gray-400 mb-2 block">Nombre</label>
+            <input type="text" name="name" required class="w-full bg-[#0a0a0a] border-2 border-gray-700 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-green-400 transition-colors pixel-font text-xs" placeholder="Tu nombre">
+          </div>
+          <div>
+            <label class="pixel-font text-xs text-gray-400 mb-2 block">Discord</label>
+            <input type="text" name="discord" class="w-full bg-[#0a0a0a] border-2 border-gray-700 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-green-400 transition-colors pixel-font text-xs" placeholder="usuario#0000">
+          </div>
+        </div>
+        <div>
+          <label class="pixel-font text-xs text-gray-400 mb-2 block">Mensaje</label>
+          <textarea name="message" required rows="4" class="w-full bg-[#0a0a0a] border-2 border-gray-700 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-green-400 transition-colors resize-none" style="font-family: 'Inter', sans-serif;" placeholder="Cuéntame sobre tu proyecto..."></textarea>
+        </div>
+        <button type="submit" class="btn-pixel pixel-border pixel-border-green px-6 py-3 text-black rounded w-full md:w-auto" style="background: var(--green);">
+          Enviar Mensaje
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="relative py-10 px-4 border-t" style="z-index: 2; border-color: rgba(74,222,128,0.1);">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <p class="pixel-font text-xs text-gray-500">© 2024 AnlowMc</p>
+    <div class="flex items-center gap-4">
+      <a href="mailto:anlowzero@gmail.com" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Email</a>
+      <a href="https://discord.gg/E4wF3Vrfe7" target="_blank" rel="noopener" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">AxoStudio</a>
+      <a href="https://discord.gg/7qZG2hFh3" target="_blank" rel="noopener" class="pixel-font text-xs text-gray-400 hover:text-green-400 transition-colors">Orbit Network</a>
+    </div>
+    <p class="text-xs text-gray-600">Crafteado con ❤️ y mucho café ☕</p>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 translate-y-20 opacity-0 pointer-events-none" style="transform: translateY(5rem);">
+  <div class="minecard rounded px-5 py-3 flex items-center gap-2" style="border-color: var(--green);">
+    <span style="color: var(--green);">✔</span>
+    <span class="pixel-font text-xs" style="color: var(--green);">¡Mensaje enviado!</span>
+  </div>
+</div>
+
+<script>
+// === Particles ===
+const particlesEl = document.getElementById('particles');
+const shapes = ['■', '◆', '●', '▲'];
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('span');
+  p.className = 'particle';
+  p.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+  p.style.left = Math.random() * 100 + '%';
+  p.style.fontSize = (10 + Math.random() * 20) + 'px';
+  p.style.color = [getComputedStyle(document.documentElement).getPropertyValue('--green').trim(),
+    getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
+    getComputedStyle(document.documentElement).getPropertyValue('--violet').trim(),
+    getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim()
+  ][Math.floor(Math.random() * 4)];
+  p.style.animationDuration = (8 + Math.random() * 16) + 's';
+  p.style.animationDelay = Math.random() * 15 + 's';
+  particlesEl.appendChild(p);
+}
+
+// === Navbar blur on scroll ===
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 50) navbar.classList.add('navbar-blur');
+  else navbar.classList.remove('navbar-blur');
+});
+
+// === Mobile menu ===
+const menuBtn = document.getElementById('menuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.add('hidden')));
+
+// === Parallax decorative blocks ===
+document.addEventListener('mousemove', (e) => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 2;
+  const y = (e.clientY / window.innerHeight - 0.5) * 2;
+  document.getElementById('deco1').style.transform = `translate(${x * 30}px, ${y * 30}px)`;
+  document.getElementById('deco2').style.transform = `translate(${x * -25}px, ${y * -25}px)`;
+  document.getElementById('deco3').style.transform = `translate(${x * 20}px, ${y * 20}px)`;
+  document.getElementById('deco4').style.transform = `translate(${x * -35}px, ${y * -35}px)`;
+  document.getElementById('deco5').style.transform = `translate(${x * 15}px, ${y * 15}px)`;
+});
+
+// === Scroll reveal ===
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // Trigger XP bars animation
+      entry.target.querySelectorAll('.xp-fill[data-width]').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+      // Trigger stat counters
+      entry.target.querySelectorAll('.stat-value[data-target]').forEach(stat => {
+        animateCounter(stat);
+      });
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// === Animated counters ===
+function animateCounter(el) {
+  if (el.dataset.animated) return;
+  el.dataset.animated = '1';
+  const target = parseInt(el.dataset.target);
+  const duration = 2000;
+  const start = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(eased * target);
+    el.textContent = current + '+';
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// === Toast ===
+const toast = document.getElementById('toast');
+const contactForm = document.getElementById('contactForm');
+
+contactForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  // Show toast
+  toast.style.transform = 'translateY(0)';
+  toast.style.opacity = '1';
+  setTimeout(() => {
+    toast.style.transform = 'translateY(5rem)';
+    toast.style.opacity = '0';
+  }, 3000);
+  contactForm.reset();
+});
+
+// === Smooth scroll for anchor links ===
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+</body>
+</html>
